@@ -217,7 +217,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 		
 		$http({
 			method: 'GET',
-			url: 'http://crossorigin.me/http://advisory.mtanyct.info/eedevwebsvc/allequipments.aspx'
+			url: 'https://crossorigin.me/http://advisory.mtanyct.info/eedevwebsvc/allequipments.aspx'
 		}).then(function successCallback(response) {
 				var x2js = new X2JS();
 				var stations = x2js.xml_str2json(response.data);
@@ -251,7 +251,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 			
 		$http({
 			method: 'GET',
-			url: 'http://crossorigin.me/http://web.mta.info/developers/data/nyct/nyct_ene.xml'
+			url: 'https://crossorigin.me/http://web.mta.info/developers/data/nyct/nyct_ene.xml'
 		}).then(function successCallback(response) {
 				var x2js = new X2JS();
 				var stations = x2js.xml_str2json(response.data);
@@ -270,7 +270,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 			
 		$http({
 			method: 'GET',
-			url: 'http://crossorigin.me/http://web.mta.info/status/serviceStatus.txt'
+			url: 'https://crossorigin.me/http://web.mta.info/status/serviceStatus.txt'
 		}).then(function successCallback(response) {
 				var x2js = new X2JS();
 				var status = x2js.xml_str2json(response.data);
