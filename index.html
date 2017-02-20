@@ -32,6 +32,7 @@
 			display: block;
 			float: left;
 			overflow: auto;
+			padding-left: 10px;
 		}
 		
 		.divMap {
@@ -39,7 +40,7 @@
 		}
 		
 		.fieldName {
-			width: 80px;
+			width: 90px;
 			display: inline-block;
 		}
 		
@@ -103,10 +104,10 @@
 		Directions:<br/>
 		<div ng-repeat="stationIndex in routePath">
 			{{adaStations[stationIndex].station}}
-			<div ng-if="stationStatus[buildStationName(adaStations[stationIndex].station)]">
+			<div ng-if="stationStatus[adaStations[stationIndex].builtStationName]">
 				<a href="" tooltip>Station Status</a>
 				<div class="statusTooltip">
-					<div ng-repeat="status in stationStatus[buildStationName(adaStations[stationIndex].station)]">
+					<div ng-repeat="status in stationStatus[adaStations[stationIndex].builtStationName]">
 						<span>Train: {{status.trainno}}</span><br/>
 						<span><span ng-if="status.equipmenttype == 'EL'">Elevator </span><span ng-if="status.equipmenttype == 'ES'">Escalator </span>Serving: {{status.serving}}</span><br/>
 						<span>Estimated Return to Service: {{status.estimatedreturntoservice}}</span><br/>
@@ -225,7 +226,12 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 				for (var i=stations.length-1; i>=0; i--) {
 					if (stations[i].ADA != "Y")
 						stations.splice(i, 1);
+					else
+						stations[i].builtStationName = $scope.buildStationName(stations[i].station)
 				}
+				stations.sort(function(a,b) {
+					return a.builtStationName.localeCompare(b.builtStationName);
+				});
 				$scope.adaStations = stations;
 				for (var i=0; i<$scope.adaStations.length; i++) {
 					var currStation = $scope.adaStations[i];
@@ -386,17 +392,20 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 					distanceNeighbor = $scope.latLonDist(minDistStationLatLon, neighborLatLon);
 				if ($scope.routeOptions.routeOption == 'leastTransfers')
 					distanceNeighbor = distanceNeighbor + 100;
-				if (neighbor.distIndex == 82) {
-					console.log('test');
-				}
 				if ($scope.routeOptions.avoidService == 'YES' && $scope.stationStatus[neighborName]) {
 					var stationStatuses = $scope.stationStatus[neighborName];
+					var outOfService = false;
 					for (var j=0; j<stationStatuses.length; j++) {
-						var lines = $scope.getLines(minDistIndex, neighborIndex);
-						var stationStatusTrains = stationStatuses[j].trainno.split("/");
-						if ($scope.intersectTrains(lines, stationStatusTrains))
-							distanceNeighbor = distanceNeighbor + 100;
+						if (stationStatuses[j].equipmenttype == 'EL') {
+							var lines = $scope.getLines(minDistIndex, neighborIndex);
+							var stationStatusTrains = stationStatuses[j].trainno.split("/");
+							if ($scope.intersectTrains(lines, stationStatusTrains)) {
+								outOfService = true;
+								break;
+							}
+						}
 					}
+					if (outOfService) distanceNeighbor = distanceNeighbor + 100;
 				}
 				var alt = dist[minDistStation.distIndex] + distanceNeighbor;
 				if (alt < dist[neighbor.distIndex]) {
@@ -462,6 +471,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 		name = name.replace("avenue", "av");
 		name = name.replace(" ave", " av");
 		name = name.replace("circle", "cir");
+		name = name.replace("square", "sq");
 		
 		return name.trim();
 	}
@@ -477,7 +487,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 		while (minIndex <= maxIndex) {
 			currIndex = (minIndex + maxIndex) / 2 | 0;
 			currStation = $scope.adaStations[currIndex];
-			var currStationName = $scope.buildStationName(currStation.station);
+			var currStationName = currStation.builtStationName;
 			if (currStationName < stationName)
 				minIndex = currIndex + 1;
 			else if (currStationName > stationName)
@@ -632,14 +642,16 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 		//var path = $scope.constructPath(shortestPathInfo, 77);
 		//var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 34);
 		//var path = $scope.constructPath(shortestPathInfo, 101);
-		//$scope.routePath = path;
+		var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 84);
+		var path = $scope.constructPath(shortestPathInfo, 187);
+		$scope.routePath = path;
 		//$scope.routeMapPath(path);
 		
 		//$scope.originADAStations = [124,187];
 		
 		//$scope.destinationADAStations = [77];
 				
-		$scope.geocoder.geocode({'address': $scope.origin}, function(results, status) {
+		/*$scope.geocoder.geocode({'address': $scope.origin}, function(results, status) {
 			if (status === 'OK') {
 				//$scope.createMarker(results[0]);
 				$scope.searchADAStations($scope.origin, results[0].geometry.location, true);
@@ -655,7 +667,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 			}
 			else
 				window.alert('Geocode of destination not successful for the following reason: ' + status);
-		});
+		});*/
 		
 		/*$scope.directionsService.route({
 			origin: $scope.origin,
