@@ -1,0 +1,63 @@
+/* Always set the map height explicitly to define the size of the div
+* element that contains the map. */
+#map {
+	height: 100%;
+}
+/* Optional: Makes the sample page fill the window. */
+html, body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+#floating-panel {
+	position: absolute;
+	top: 10px;
+	left: 25%;
+	z-index: 5;
+	background-color: #fff;
+	padding: 5px;
+	border: 1px solid #999;
+	text-align: center;
+	font-family: 'Roboto','sans-serif';
+	line-height: 30px;
+	padding-left: 10px;
+}
+
+.searchBar {
+	width: 400px;
+	display: block;
+	float: left;
+	overflow: auto;
+	padding-left: 10px;
+}
+
+.divMap {
+	display: block;
+}
+
+.fieldName {
+	width: 90px;
+	display: inline-block;
+}
+
+.fieldTextBox {
+	width: 250px;
+}
+
+.lineName {
+	display: inline-block;
+}
+
+.statusTooltip {
+	position: absolute;
+	display: inline-block;
+	z-index: 30;
+	background-color: #FFF;
+	box-shadow: 5px 5px 8px #CCC;
+	padding: 10px;
+	border-style: solid;
+	border-width: 1px;
+	display: none;
+	max-height: 400px;
+	overflow: auto;
+}
