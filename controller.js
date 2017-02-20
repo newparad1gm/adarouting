@@ -80,7 +80,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 		
 		$http({
 			method: 'GET',
-			url: 'https://crossorigin.me/http://advisory.mtanyct.info/eedevwebsvc/allequipments.aspx'
+			url: 'allequipments'
 		}).then(function successCallback(response) {
 				var x2js = new X2JS();
 				var stations = x2js.xml_str2json(response.data);
@@ -119,7 +119,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 			
 		$http({
 			method: 'GET',
-			url: 'https://crossorigin.me/http://web.mta.info/developers/data/nyct/nyct_ene.xml'
+			url: 'stationstatus'
 		}).then(function successCallback(response) {
 				var x2js = new X2JS();
 				var stations = x2js.xml_str2json(response.data);
@@ -138,7 +138,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 			
 		$http({
 			method: 'GET',
-			url: 'https://crossorigin.me/http://web.mta.info/status/serviceStatus.txt'
+			url: 'linestatus'
 		}).then(function successCallback(response) {
 				var x2js = new X2JS();
 				var status = x2js.xml_str2json(response.data);
