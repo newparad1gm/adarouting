@@ -642,16 +642,16 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 		//var path = $scope.constructPath(shortestPathInfo, 77);
 		//var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 34);
 		//var path = $scope.constructPath(shortestPathInfo, 101);
-		var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 84);
-		var path = $scope.constructPath(shortestPathInfo, 187);
-		$scope.routePath = path;
+		//var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 84);
+		//var path = $scope.constructPath(shortestPathInfo, 187);
+		//$scope.routePath = path;
 		//$scope.routeMapPath(path);
 		
 		//$scope.originADAStations = [124,187];
 		
 		//$scope.destinationADAStations = [77];
 				
-		/*$scope.geocoder.geocode({'address': $scope.origin}, function(results, status) {
+		$scope.geocoder.geocode({'address': $scope.origin}, function(results, status) {
 			if (status === 'OK') {
 				//$scope.createMarker(results[0]);
 				$scope.searchADAStations($scope.origin, results[0].geometry.location, true);
@@ -667,7 +667,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 			}
 			else
 				window.alert('Geocode of destination not successful for the following reason: ' + status);
-		});*/
+		});
 		
 		/*$scope.directionsService.route({
 			origin: $scope.origin,
