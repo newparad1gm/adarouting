@@ -63,6 +63,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 		'routeOption': 'shortest',
 		'avoidService': 'YES'
 	};
+	$scope.showRoute = false;
 	
     $scope.initMap = function() {
 		Initializer.mapsInitialized.then(function() {
@@ -307,7 +308,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 		var containsName = false;
 		var containsNum = false;
 		for (var i = 0; i<nameArr.length; i++) {
-			if (numArr[i] && numArr[i].length > 0) {
+			if (!containsNum && numArr[i] && numArr[i].length > 0) {
 				numStr = numArr[i].join('/');
 				containsNum = true;
 			}
@@ -492,6 +493,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 	$scope.$watchGroup(['selectedStations.origin', 'selectedStations.dest', 'routeOptions.routeOption', 'routeOptions.avoidService'], function(newVal, oldVal) { 
 		if ($scope.adaStations && $scope.selectedStations.origin && $scope.selectedStations.dest) {
 			$scope.routeStation();
+			$scope.showRoute = true;
 		}
 	});
 	
