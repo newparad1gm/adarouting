@@ -61,3 +61,11 @@ html, body {
 	max-height: 400px;
 	overflow: auto;
 }
+
+.closeButton {
+	position: relative;
+    float: right;
+    margin-top: -10px;
+	margin-right: -5px;
+    cursor: pointer;
+}

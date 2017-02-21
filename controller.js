@@ -544,5 +544,9 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
         });*/
     }
 	
+	$scope.closeTooltip = function($event) {
+		$($event.currentTarget).parent().hide();
+	}
+	
 	$scope.initMap();
 }]);

@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en-US">
-
+<title>NY MTA ADA Routing</title>
+<head>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+</head>
 <link rel="stylesheet" href="index.css"> 
 
 <script type="text/javascript" src="angular.js"></script>
@@ -44,6 +48,7 @@
 			<div ng-if="stationStatus[adaStations[stationIndex].builtStationName]">
 				<a href="" tooltip>Station Status</a>
 				<div class="statusTooltip">
+					<div class="closeButton" ng-click="closeTooltip($event)">x</div>
 					<div ng-repeat="status in stationStatus[adaStations[stationIndex].builtStationName]">
 						<span>Train: {{status.trainno}}</span><br/>
 						<span><span ng-if="status.equipmenttype == 'EL'">Elevator </span><span ng-if="status.equipmenttype == 'ES'">Escalator </span>Serving: {{status.serving}}</span><br/>
@@ -58,6 +63,7 @@
 				<div ng-repeat="line in getLines(routePath[$index], routePath[$index+1])" class="lineName">
 					<a href="" ng-if="lineStatus[line]" tooltip>{{ line }}</a><span ng-if="!lineStatus[line]">{{ line }}</span><span ng-if="$index < getLines(routePath[$parent.$index], routePath[$parent.$index+1]).length - 1">/</span>
 					<div ng-if="lineStatus[line]" class="statusTooltip">
+						<div class="closeButton" ng-click="closeTooltip($event)">x</div>
 						<span>Status: {{lineStatus[line].status}}</span><br/>
 						<div ng-bind-html="lineStatus[line].text"></div>
 					</div>
@@ -71,4 +77,13 @@
 <div id="map" class="divMap"></div>
 
 </body>
+<!-- 
+Richard Yu 2017
+
+uses Angular1
+Jquery
+XML2JSON
+Papa Parse
+Node js server
+ -->
 </html>
