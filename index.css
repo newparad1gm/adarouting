@@ -24,21 +24,31 @@ html, body {
 }
 
 .leftBar {
-	width: 400px;
+	width: 100%;
+	height: 100%;
 	display: block;
 	float: left;
 	overflow: auto;
 	position: absolute;
 	height: 100%;
+	overflow-x: hidden;
 }
 
 .searchBar {
-	width: 400px;
+	width: 100%;
+	height: 100%;
 	display: block;
 	float: left;
 	overflow: auto;
-	padding-left: 10px;
 	position: absolute;
+}
+
+.searchWidth {
+	width: 400px;
+}
+
+.searchPadding {
+	padding-left: 10px;
 }
 
 .loadingOverlay {
@@ -46,7 +56,6 @@ html, body {
 	display: block;
 	float: left;
 	overflow: auto;
-	padding-left: 10px;
 	position: relative;
 	height: 100%;
 	background-color: #F0F0F0;
@@ -56,6 +65,7 @@ html, body {
 .divMap {
 	display: block;
 	margin-left: 400px;
+	margin-right: 18px;
 }
 
 .fieldName {
