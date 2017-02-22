@@ -23,16 +23,39 @@ html, body {
 	padding-left: 10px;
 }
 
+.leftBar {
+	width: 400px;
+	display: block;
+	float: left;
+	overflow: auto;
+	position: absolute;
+	height: 100%;
+}
+
 .searchBar {
 	width: 400px;
 	display: block;
 	float: left;
 	overflow: auto;
 	padding-left: 10px;
+	position: absolute;
+}
+
+.loadingOverlay {
+	width: 400px;
+	display: block;
+	float: left;
+	overflow: auto;
+	padding-left: 10px;
+	position: relative;
+	height: 100%;
+	background-color: #F0F0F0;
+	z-index: 100;
 }
 
 .divMap {
 	display: block;
+	margin-left: 400px;
 }
 
 .fieldName {
@@ -68,4 +91,23 @@ html, body {
     margin-top: -10px;
 	margin-right: -5px;
     cursor: pointer;
+}
+
+.loading {
+	background-image: url(loading.gif); 
+	background-repeat: no-repeat;
+    background-position: center; 
+	height: 100%;
+	width: 100%;
+}
+
+.routeLoadingOverlay {
+	position: absolute;
+	height: 100%;
+	background-color: #F0F0F0;
+	z-index: 100;
+}
+
+.route {
+	position: relative;
 }

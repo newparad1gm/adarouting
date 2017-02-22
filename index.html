@@ -4,7 +4,8 @@
 	<title>NY MTA ADA Routing</title>
 	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 	<meta content="utf-8" http-equiv="encoding">
-	<link rel="stylesheet" href="index.css"> 
+	
+	<link rel="stylesheet" href="index.css" type="text/css"/>
 
 	<script type="text/javascript" src="angular.js"></script>
 	<script type="text/javascript" src="angular-sanitize.js"></script>
@@ -16,59 +17,64 @@
 
 <body>
 
-<div ng-app="myApp" ng-controller="myCtrl" class="searchBar">
-	<div>
-		<p><div class="fieldName">Origin :</div> <input type="text" ng-model="origin" class="fieldTextBox"></p>
-		<p><div class="fieldName">Destination :</div> <input type="text" ng-model="destination" class="fieldTextBox"></p>
-		<p><button ng-click="route()">Route</button>
-			<input type="radio" name="routeOptions" ng-model="routeOptions.routeOption" value="shortest" /><span>Shortest Route</span>
-			<input type="radio" name="routeOptions" ng-model="routeOptions.routeOption" value="leastTransfers" /><span>Least Transfers</span>
-		</p>
-		<p><input type="checkbox" ng-model="routeOptions.avoidService" ng-true-value="'YES'" ng-false-value="'NO'" /><span>Avoid Stations Out of Service</span></p>
+<div ng-app="myApp" ng-controller="myCtrl" class="leftBar">
+	<div class="loadingOverlay" ng-show="pageLoading">
+		<div class="loading"></div>
 	</div>
-	<div ng-show="showRoute">
+	<div class="searchBar" ng-show="!pageLoading">
 		<div>
-			Origin Stations:
-			<div ng-repeat="stationIndex in foundStations.origin track by $index">
-				<input type="radio" name="originStations" ng-model="selectedStations.origin" ng-value="stationIndex" ng-init="$index==0?(selectedStations.origin=stationIndex):''" /><span>{{adaStations[stationIndex].station}} {{adaStations[stationIndex].trainno}}</span>
-			</div>
+			<p><div class="fieldName">Origin :</div> <input type="text" ng-model="origin" class="fieldTextBox"></p>
+			<p><div class="fieldName">Destination :</div> <input type="text" ng-model="destination" class="fieldTextBox"></p>
+			<p><button ng-click="route()">Route</button>
+				<input type="radio" name="routeOptions" ng-model="routeOptions.routeOption" value="shortest" /><span>Shortest Route</span>
+				<input type="radio" name="routeOptions" ng-model="routeOptions.routeOption" value="leastTransfers" /><span>Least Transfers</span>
+			</p>
+			<p><input type="checkbox" ng-model="routeOptions.avoidService" ng-true-value="'YES'" ng-false-value="'NO'" /><span>Avoid Stations Out of Service</span></p>
 		</div>
-		<br/>
-		<div>
-			Destination Stations:
-			<div ng-repeat="stationIndex in foundStations.dest track by $index">
-				<input type="radio" name="destStations" ng-model="selectedStations.dest" ng-value="stationIndex" ng-init="$index==0?(selectedStations.dest=stationIndex):''" /><span>{{adaStations[stationIndex].station}} {{adaStations[stationIndex].trainno}}</span>
+		<div class="route" ng-show="showRoute">
+			<div>
+				Origin Stations:
+				<div ng-repeat="stationIndex in foundStations.origin track by $index">
+					<input type="radio" name="originStations" ng-model="selectedStations.origin" ng-value="stationIndex" ng-init="$index==0?(selectedStations.origin=stationIndex):''" /><span>{{adaStations[stationIndex].station}} {{adaStations[stationIndex].trainno}}</span>
+				</div>
 			</div>
-		</div>
-		<br/>
-		<div>
-			Directions:<br/>
-			<div ng-repeat="stationIndex in routePath">
-				{{adaStations[stationIndex].station}}
-				<div ng-if="stationStatus[adaStations[stationIndex].builtStationName]">
-					<a href="" tooltip>Station Status</a>
-					<div class="statusTooltip">
-						<div class="closeButton" ng-click="closeTooltip($event)">x</div>
-						<div ng-repeat="status in stationStatus[adaStations[stationIndex].builtStationName]">
-							<span>Train: {{status.trainno}}</span><br/>
-							<span><span ng-if="status.equipmenttype == 'EL'">Elevator </span><span ng-if="status.equipmenttype == 'ES'">Escalator </span>Serving: {{status.serving}}</span><br/>
-							<span>Estimated Return to Service: {{status.estimatedreturntoservice}}</span><br/>
-							<span>Reason: {{status.reason}}</span><br/>
+			<br/>
+			<div>
+				Destination Stations:
+				<div ng-repeat="stationIndex in foundStations.dest track by $index">
+					<input type="radio" name="destStations" ng-model="selectedStations.dest" ng-value="stationIndex" ng-init="$index==0?(selectedStations.dest=stationIndex):''" /><span>{{adaStations[stationIndex].station}} {{adaStations[stationIndex].trainno}}</span>
+				</div>
+			</div>
+			<br/>
+			<div>
+				Directions:<br/>
+				<div ng-repeat="stationIndex in routePath">
+					{{adaStations[stationIndex].station}}
+					<div ng-if="stationStatus[adaStations[stationIndex].builtStationName]">
+						<a href="" tooltip>Station Status</a>
+						<div class="statusTooltip">
+							<div class="closeButton" ng-click="closeTooltip($event)">x</div>
+							<div ng-repeat="status in stationStatus[adaStations[stationIndex].builtStationName]">
+								<span>Train: {{status.trainno}}</span><br/>
+								<span><span ng-if="status.equipmenttype == 'EL'">Elevator </span><span ng-if="status.equipmenttype == 'ES'">Escalator </span>Serving: {{status.serving}}</span><br/>
+								<span>Estimated Return to Service: {{status.estimatedreturntoservice}}</span><br/>
+								<span>Reason: {{status.reason}}</span><br/>
+							</div>
 						</div>
 					</div>
-				</div>
-				
-				<div ng-if="$index < routePath.length - 1">
-					Take the 
-					<div ng-repeat="line in getLines(routePath[$index], routePath[$index+1])" class="lineName">
-						<a href="" ng-if="lineStatus[line]" tooltip>{{ line }}</a><span ng-if="!lineStatus[line]">{{ line }}</span><span ng-if="$index < getLines(routePath[$parent.$index], routePath[$parent.$index+1]).length - 1">/</span>
-						<div ng-if="lineStatus[line]" class="statusTooltip">
-							<div class="closeButton" ng-click="closeTooltip($event)">x</div>
-							<span>Status: {{lineStatus[line].status}}</span><br/>
-							<div ng-bind-html="lineStatus[line].text"></div>
-						</div>
-					</div> 
-					Train to:
+					
+					<div ng-if="$index < routePath.length - 1">
+						Take the 
+						<div ng-repeat="line in getLines(routePath[$index], routePath[$index+1])" class="lineName">
+							<a href="" ng-if="lineStatus[line]" tooltip>{{ line }}</a><span ng-if="!lineStatus[line]">{{ line }}</span><span ng-if="$index < getLines(routePath[$parent.$index], routePath[$parent.$index+1]).length - 1">/</span>
+							<div ng-if="lineStatus[line]" class="statusTooltip">
+								<div class="closeButton" ng-click="closeTooltip($event)">x</div>
+								<span>Status: {{lineStatus[line].status}}</span><br/>
+								<div ng-bind-html="lineStatus[line].text"></div>
+							</div>
+						</div> 
+						Train to:
+					</div>
 				</div>
 			</div>
 		</div>

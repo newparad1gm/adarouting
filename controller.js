@@ -40,7 +40,7 @@ var app = angular.module('myApp', ['ngSanitize'])
     };
 })
 
-app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Initializer, $http) {
+app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scope, Initializer, $http, $q) {
 	$scope.directionsDisplays = [];
 	$scope.directionsService;
 	$scope.adaStations;
@@ -64,6 +64,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 		'avoidService': 'YES'
 	};
 	$scope.showRoute = false;
+	$scope.pageLoading = true;
 	
     $scope.initMap = function() {
 		Initializer.mapsInitialized.then(function() {
@@ -79,101 +80,134 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', function($scope, Ini
 			$scope.distanceMatrixService = new google.maps.DistanceMatrixService();
 		});
 		
-		$http({
-			method: 'GET',
-			url: 'allequipments'
-		}).then(function successCallback(response) {
-				var x2js = new X2JS();
-				var stations = x2js.xml_str2json(response.data);
-				stations = stations.NYCEquipments.equipment;
-				for (var i=stations.length-1; i>=0; i--) {
-					if (stations[i].ADA != "Y")
-						stations.splice(i, 1);
-					else
-						stations[i].builtStationName = $scope.buildStationName(stations[i].station)
+		if (!String.prototype.endsWith) {
+			String.prototype.endsWith = function(searchString, position) {
+				var subjectString = this.toString();
+				if (typeof position !== 'number' || !isFinite(position) || Math.floor(position) !== position || position > subjectString.length) {
+					position = subjectString.length;
 				}
-				stations.sort(function(a,b) {
-					return a.builtStationName.localeCompare(b.builtStationName);
+				position -= searchString.length;
+				var lastIndex = subjectString.indexOf(searchString, position);
+				return lastIndex !== -1 && lastIndex === position;
+			};
+		}
+		
+		$q.all([
+			(function() {
+				var d = $q.defer();
+				$http({
+					method: 'GET',
+					url: 'allequipments'
+				}).then(function successCallback(response) {
+					var x2js = new X2JS();
+					var stations = x2js.xml_str2json(response.data);
+					stations = stations.NYCEquipments.equipment;
+					for (var i=stations.length-1; i>=0; i--) {
+						if (stations[i].ADA != "Y")
+							stations.splice(i, 1);
+						else
+							stations[i].builtStationName = $scope.buildStationName(stations[i].station)
+					}
+					stations.sort(function(a,b) {
+						return a.builtStationName.localeCompare(b.builtStationName);
+					});
+					$scope.adaStations = stations;
+					for (var i=0; i<$scope.adaStations.length; i++) {
+						var currStation = $scope.adaStations[i];
+						currStation.index = i;
+						var trains = currStation.trainno.split("/");
+						var adjacentStations = [];
+						for (var j=0; j<$scope.adaStations.length; j++) {
+							if (j==i) continue;
+							var jStation = $scope.adaStations[j];
+							var jTrains = jStation.trainno.split("/");
+							if ($scope.intersectTrains(trains, jTrains)) {
+								adjacentStations.push(j);
+								if (!$scope.adaStationEdges[i])
+									$scope.adaStationEdges[i] = []
+								$scope.adaStationEdges[i][j] = 1;
+							}
+						}
+						currStation.adjacentStations = adjacentStations;
+					}
+					d.resolve(response);
+				}, function errorCallback(response) {
+					window.alert('ADA station request failed due to ' + response.statusText);
 				});
-				$scope.adaStations = stations;
-				for (var i=0; i<$scope.adaStations.length; i++) {
-					var currStation = $scope.adaStations[i];
-					currStation.index = i;
-					var trains = currStation.trainno.split("/");
-					var adjacentStations = [];
-					for (var j=0; j<$scope.adaStations.length; j++) {
-						if (j==i) continue;
-						var jStation = $scope.adaStations[j];
-						var jTrains = jStation.trainno.split("/");
-						if ($scope.intersectTrains(trains, jTrains)) {
-							adjacentStations.push(j);
-							if (!$scope.adaStationEdges[i])
-								$scope.adaStationEdges[i] = []
-							$scope.adaStationEdges[i][j] = 1;
+				return d.promise;
+			})(),
+			(function() {
+				var d = $q.defer();
+				$http({
+					method: 'GET',
+					url: 'stationstatus'
+				}).then(function successCallback(response) {
+					var x2js = new X2JS();
+					var stations = x2js.xml_str2json(response.data);
+					stations = stations.NYCOutages.outage;
+					var stationADAStatus = new Array();
+					for (var i=0; i<stations.length; i++) {
+						var stationName = $scope.buildStationName(stations[i].station);
+						if (!stationADAStatus[stationName])
+							stationADAStatus[stationName] = [];
+						stationADAStatus[stationName].push(stations[i]);
+					}
+					$scope.stationStatus = stationADAStatus;
+					d.resolve(response);
+				}, function errorCallback(response) {
+					window.alert('ADA station request failed due to ' + response.statusText);
+				});
+				return d.promise;
+			})(),
+			(function() {
+				var d = $q.defer();
+				$http({
+					method: 'GET',
+					url: 'linestatus'
+				}).then(function successCallback(response) {
+					var x2js = new X2JS();
+					var status = x2js.xml_str2json(response.data);
+					status = status.service.subway.line;
+					var lineStatus = new Array();
+					for (var i=0; i<status.length; i++) {
+						if (status[i].status != 'GOOD SERVICE') {
+							var lines = status[i].name.split("");
+							for (var j=0; j<lines.length; j++) {
+								lineStatus[lines[j]] = status[i];
+							}
 						}
 					}
-					currStation.adjacentStations = adjacentStations;
-				}
-			}, function errorCallback(response) {
-				window.alert('ADA station request failed due to ' + response.statusText);
-			});
-			
-		$http({
-			method: 'GET',
-			url: 'stationstatus'
-		}).then(function successCallback(response) {
-				var x2js = new X2JS();
-				var stations = x2js.xml_str2json(response.data);
-				stations = stations.NYCOutages.outage;
-				var stationADAStatus = new Array();
-				for (var i=0; i<stations.length; i++) {
-					var stationName = $scope.buildStationName(stations[i].station);
-					if (!stationADAStatus[stationName])
-						stationADAStatus[stationName] = [];
-					stationADAStatus[stationName].push(stations[i]);
-				}
-				$scope.stationStatus = stationADAStatus;
-			}, function errorCallback(response) {
-				window.alert('ADA station request failed due to ' + response.statusText);
-			});
-			
-		$http({
-			method: 'GET',
-			url: 'linestatus'
-		}).then(function successCallback(response) {
-				var x2js = new X2JS();
-				var status = x2js.xml_str2json(response.data);
-				status = status.service.subway.line;
-				var lineStatus = new Array();
-				for (var i=0; i<status.length; i++) {
-					if (status[i].status != 'GOOD SERVICE') {
-						var lines = status[i].name.split("");
-						for (var j=0; j<lines.length; j++) {
-							lineStatus[lines[j]] = status[i];
+					$scope.lineStatus = lineStatus;
+					d.resolve(response);
+				}, function errorCallback(response) {
+					window.alert('ADA station request failed due to ' + response.statusText);
+				});
+				return d.promise;
+			})(),
+			(function() {
+				var d = $q.defer();
+				$http({
+					method: 'GET',
+					url: 'stops.txt'
+				}).then(function successCallback(response) {
+					var jsonobject = Papa.parse(response.data);
+					var stops = new Array();
+					for (var i=1; i<jsonobject.data.length; i++) {
+						if (!jsonobject.data[i][2]) continue;
+						var stationName = $scope.buildStationName(jsonobject.data[i][2]);
+						stops[stationName] = {
+							"lat": jsonobject.data[i][4],
+							"lon": jsonobject.data[i][5],
 						}
 					}
-				}
-				$scope.lineStatus = lineStatus;
-			}, function errorCallback(response) {
-				window.alert('ADA station request failed due to ' + response.statusText);
-			});
-			
-		$http({
-			method: 'GET',
-			url: 'stops.txt'
-		}).then(function successCallback(response) {
-				var jsonobject = Papa.parse(response.data);
-				var stops = new Array();
-				for (var i=1; i<jsonobject.data.length; i++) {
-					if (!jsonobject.data[i][2]) continue;
-					var stationName = $scope.buildStationName(jsonobject.data[i][2]);
-					stops[stationName] = {
-						"lat": jsonobject.data[i][4],
-						"lon": jsonobject.data[i][5],
-					}
-				}
-				$scope.stationLatLon = stops;
-			});
+					$scope.stationLatLon = stops;
+					d.resolve(response);
+				});
+				return d.promise;
+			})()
+		]).then(function(responses) {
+			$scope.pageLoading = false;
+		});
 	}
 	
 	$scope.getLines = function(station1index, station2index) {
