@@ -68,8 +68,6 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 	$scope.originAutocomplete;
 	$scope.destAutocomplete;
 	$scope.map;
-	//$scope.originADAStations = [];
-	//$scope.destinationADAStations = [];
 	$scope.originADAStation;
 	$scope.destinationADAStation;
 	$scope.adaStationEdges = [];
@@ -114,6 +112,69 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 			};
 		}
 		
+		if (!Array.prototype.indexOf) {
+			Array.prototype.indexOf = function(searchElement, fromIndex) {
+				var k;
+				if (this == null)
+					throw new TypeError('"this" is null or not defined');
+					
+				var o = Object(this);
+				var len = o.length >>> 0;
+				if (len === 0)
+					return -1;
+				
+				var n = fromIndex | 0;
+				if (n >= len)
+					return -1;
+				
+				k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+				while (k < len) {
+					if (k in o && o[k] === searchElement)
+						return k;
+					k++;
+				}
+				return -1;
+			};
+		}
+		
+		if (!Object.keys) {
+			Object.keys = (function() {
+				'use strict';
+				var hasOwnProperty = Object.prototype.hasOwnProperty,
+				hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),
+				dontEnums = [
+					'toString',
+					'toLocaleString',
+					'valueOf',
+					'hasOwnProperty',
+					'isPrototypeOf',
+					'propertyIsEnumerable',
+					'constructor'
+				],
+				dontEnumsLength = dontEnums.length;
+
+				return function(obj) {
+					if (typeof obj !== 'function' && (typeof obj !== 'object' || obj === null))
+						throw new TypeError('Object.keys called on non-object');
+
+					var result = [], prop, i;
+
+					for (prop in obj) {
+						if (hasOwnProperty.call(obj, prop))
+							result.push(prop);
+					}
+
+					if (hasDontEnumBug) {
+						for (i = 0; i < dontEnumsLength; i++) {
+							if (hasOwnProperty.call(obj, dontEnums[i]))
+								result.push(dontEnums[i]);
+						}
+					}
+					return result;
+				};
+			}());
+		}
+		
 		$q.all([
 			(function() {
 				var d = $q.defer();
@@ -124,34 +185,48 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 					var x2js = new X2JS();
 					var stations = x2js.xml_str2json(response.data);
 					stations = stations.NYCEquipments.equipment;
+					var stationsByName = new Array();
 					for (var i=stations.length-1; i>=0; i--) {
 						if (stations[i].ADA != "Y")
 							stations.splice(i, 1);
-						else
-							stations[i].builtStationName = $scope.buildStationName(stations[i].station)
-					}
-					stations.sort(function(a,b) {
-						return a.builtStationName.localeCompare(b.builtStationName);
-					});
-					$scope.adaStations = stations;
-					for (var i=0; i<$scope.adaStations.length; i++) {
-						var currStation = $scope.adaStations[i];
-						currStation.index = i;
-						var trains = currStation.trainno.split("/");
-						var adjacentStations = [];
-						for (var j=0; j<$scope.adaStations.length; j++) {
-							if (j==i) continue;
-							var jStation = $scope.adaStations[j];
-							var jTrains = jStation.trainno.split("/");
-							if ($scope.intersectTrains(trains, jTrains)) {
-								adjacentStations.push(j);
-								if (!$scope.adaStationEdges[i])
-									$scope.adaStationEdges[i] = []
-								$scope.adaStationEdges[i][j] = 1;
+						else {
+							var builtStationName = $scope.buildStationName(stations[i].station);
+							var trains = stations[i].trainno.split("/");
+							stations[i].builtStationName = builtStationName;
+							if (!stationsByName[builtStationName]) {
+								stationsByName[builtStationName] = stations[i];
+								stationsByName[builtStationName].trainArr = new Array();
+							}
+							for (var j=0; j<trains.length; j++) {
+								stationsByName[builtStationName].trainArr[trains[j]] = true;
 							}
 						}
-						currStation.adjacentStations = adjacentStations;
 					}
+					//special case for fulton st, R train is accessible but doesn't appear
+					stationsByName['fulton st'].trainArr['R'] = true;
+					/*stations.sort(function(a,b) {
+						return a.builtStationName.localeCompare(b.builtStationName);
+					});*/
+					//$scope.adaStations = stations;
+					var stationIndex = 0;
+					for (var stationName in stationsByName) {
+						var station = stationsByName[stationName];
+						station.index = stationIndex;
+						var adjacentStations = [];
+						for (var adjStationName in stationsByName) {
+							if (stationName == adjStationName) continue;
+							var adjStation = stationsByName[adjStationName];
+							for (var train in station.trainArr) {
+								if (adjStation.trainArr[train]) {
+									adjacentStations.push(adjStationName);
+									break;
+								}
+							}
+						}
+						station.adjacentStations = adjacentStations;
+						stationIndex++;
+					}
+					$scope.adaStations = stationsByName;
 					d.resolve(response);
 				}, function errorCallback(response) {
 					window.alert('ADA station request failed due to ' + response.statusText);
@@ -258,27 +333,15 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 			scope.autocomplete.dest = autocomplete;
 	};
 	
-	$scope.getLines = function(station1index, station2index) {
-		var station1 = $scope.adaStations[station1index];
-		var station2 = $scope.adaStations[station2index];
-		var trains1 = station1.trainno.split("/");
-		var trains2 = station2.trainno.split("/");
+	$scope.getLines = function(station1name, station2name) {
+		var station1 = $scope.adaStations[station1name];
+		var station2 = $scope.adaStations[station2name];
 		var lines = [];
-		for (var i=0; i<trains1.length; i++) {
-			for (var j=0; j<trains2.length; j++) {
-				if (trains1[i] == trains2[j]) lines.push(trains1[i]);
-			}
+		for (var train in station1.trainArr) {
+			if (station2.trainArr[train])
+				lines.push(train);
 		}
 		return lines;
-	}
-	
-	$scope.intersectTrains = function(aTrains, bTrains) {
-		for (var i=0; i<aTrains.length; i++) {
-			for (var j=0; j<bTrains.length; j++) {
-				if (aTrains[i] == bTrains[j]) return true;
-			}
-		}
-		return false;
 	}
 	
 	$scope.latLonDist = function(station1, station2) {
@@ -295,41 +358,38 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 	}
 	
 	$scope.shortestPath = function(edges, stations, startStation) {
-		var dist = new Array(stations.length);
-		var prev = new Array(stations.length);
-		var Q = new Array(stations.length);
-		for (var i=0; i<stations.length; i++) {
-			dist[i] = Number.MAX_VALUE;
-			stations[i].distIndex = i;
-			Q[i] = stations[i];
+		var dist = new Array();
+		var prev = new Array();
+		var Q = new Array();
+		for (var stationName in stations) {
+			dist[stationName] = Number.MAX_VALUE;
+			Q[stationName] = stations[stationName];
 		}
 		
 		dist[startStation] = 0;
 		
-		while (Q.length > 0) {
+		while (Object.keys(Q).length > 0) {
 			var minDist = Number.MAX_VALUE;
 			var minDistStation = null;
 			var minDistIndex = -1;
-			for (var i=0; i<Q.length; i++) {
-				if (dist[Q[i].distIndex] < minDist) {
-					minDist = dist[Q[i].distIndex];
-					minDistStation = Q[i];
-					minDistIndex = i;
+			for (var stationName in Q) {
+				if (dist[stationName] < minDist) {
+					minDist = dist[stationName];
+					minDistStation = Q[stationName];
+					minDistStationName = stationName;
 				}
 			}
-			Q.splice(minDistIndex, 1);
+			delete Q[minDistStationName]
 			
 			if (!minDistStation) break;
 			
-			var minDistStationName = $scope.buildStationName(minDistStation.station);
 			var minDistStationLatLon = $scope.stationLatLon[minDistStationName];
-			var minDistTrains = minDistStation.trainno.split("/");
+			var minDistTrains = minDistStation.trainArr;
 			minDistStation.latLon = minDistStationLatLon;
 			
 			for (var i=0; i<minDistStation.adjacentStations.length; i++) {
-				var neighborIndex = minDistStation.adjacentStations[i];
-				var neighbor = stations[neighborIndex];
-				var neighborName = $scope.buildStationName(neighbor.station);
+				var neighborName = minDistStation.adjacentStations[i];
+				var neighbor = stations[neighborName];
 				var neighborLatLon = $scope.stationLatLon[neighborName];
 				neighbor.latLon = neighborLatLon;
 				var distanceNeighbor = 100;
@@ -342,20 +402,21 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 					var outOfService = false;
 					for (var j=0; j<stationStatuses.length; j++) {
 						if (stationStatuses[j].equipmenttype == 'EL') {
-							var lines = $scope.getLines(minDistIndex, neighborIndex);
 							var stationStatusTrains = stationStatuses[j].trainno.split("/");
-							if ($scope.intersectTrains(lines, stationStatusTrains)) {
-								outOfService = true;
-								break;
+							for (var j=0; j<stationStatusTrains.length; j++) {
+								if (minDistStation.trainArr[stationStatusTrains[j]] || neighbor.trainArr[stationStatusTrains[j]]) {
+									outOfService = true;
+									break;
+								}
 							}
 						}
 					}
 					if (outOfService) distanceNeighbor = distanceNeighbor + 100;
 				}
-				var alt = dist[minDistStation.distIndex] + distanceNeighbor;
-				if (alt < dist[neighbor.distIndex]) {
-					dist[neighbor.distIndex] = alt;
-					prev[neighbor.distIndex] = minDistStation.index;
+				var alt = dist[minDistStationName] + distanceNeighbor;
+				if (alt < dist[neighborName]) {
+					dist[neighborName] = alt;
+					prev[neighborName] = minDistStationName;
 				}
 			}
 		}
@@ -421,29 +482,6 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 		return name.trim();
 	}
 	
-	// binary search for station name
-	$scope.searchStation = function(stationName) {
-		stationName = $scope.buildStationName(stationName);
-		var minIndex = 0;
-		var maxIndex = $scope.adaStations.length - 1;
-		var currIndex;
-		var currStation;
-		
-		while (minIndex <= maxIndex) {
-			currIndex = (minIndex + maxIndex) / 2 | 0;
-			currStation = $scope.adaStations[currIndex];
-			var currStationName = currStation.builtStationName;
-			if (currStationName < stationName)
-				minIndex = currIndex + 1;
-			else if (currStationName > stationName)
-				maxIndex = currIndex - 1;
-			else 
-				return currIndex;
-		}
-		
-		return -1;
-	}
-	
 	$scope.createMarker = function(place) {
         var placeLoc = place.geometry.location;
 		
@@ -458,6 +496,15 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
         });
     }
 	
+	$scope.trainArrayStr = function(trainArr) {
+		var tempArr = [];
+		for (var train in trainArr) {
+			tempArr.push(train);
+		}
+		
+		return tempArr.join('/');
+	}
+	
 	$scope.searchADAStations = function(name, loc, origin) {
 		$scope.placesService.nearbySearch({
 			location: loc,
@@ -469,40 +516,13 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 				var nearADAStations = [];
 				var nearADAStationMTAs = [];
 				for (var i = 0; i < results.length; i++) {
-					var adaStationIndex = $scope.searchStation(results[i].name);
-					if (adaStationIndex > -1) {
-						if (nearADAStationMTAs.indexOf(adaStationIndex) == -1) {
-							nearADAStationLocs.push(results[i].geometry.location);
-							nearADAStations.push(results[i]);
-							nearADAStationMTAs.push(adaStationIndex);
-						}
-					}
+					var builtName = $scope.buildStationName(results[i].name);
+					if ($scope.adaStations[builtName] && nearADAStationMTAs.indexOf(builtName) < 0)
+						nearADAStationMTAs.push(builtName);
 				}
 				if (origin) $scope.foundStations.origin = nearADAStationMTAs;
 				else $scope.foundStations.dest = nearADAStationMTAs;
 				$scope.$apply();
-				/*$scope.distanceMatrixService.getDistanceMatrix({
-					origins: [name],
-					destinations: nearADAStationLocs,
-					travelMode: 'WALKING'
-				}, function(response, status) {
-					var minDist = Number.MAX_VALUE;
-					var minDistIndex = -1;
-					for (var i = 0; i < response.rows[0].elements.length; i++) {
-						if (response.rows[0].elements[i].distance.value < minDist) {
-							minDist = response.rows[0].elements[i].distance.value;
-							minDistIndex = i;
-						}
-					}
-					$scope.createMarker(nearADAStations[minDistIndex]);
-					var ADAStation = {
-						"station": nearADAStations[minDistIndex],
-						"MTAStationIndex": nearADAStationMTAs[minDistIndex]
-					}
-					if (origin) $scope.originADAStation = ADAStation;
-					else $scope.destinationADAStation = ADAStation;
-					$scope.routeStation();
-				});*/
 			}
 		});
 	}
@@ -580,22 +600,6 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 	});
 	
     $scope.route = function() {
-		//var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 101);
-		//var path = $scope.constructPath(shortestPathInfo, 94);
-		//var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 248);
-		//var path = $scope.constructPath(shortestPathInfo, 104);
-		//var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 187);
-		//var path = $scope.constructPath(shortestPathInfo, 77);
-		//var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 34);
-		//var path = $scope.constructPath(shortestPathInfo, 101);
-		//var shortestPathInfo = $scope.shortestPath($scope.adaStationEdgeArr, $scope.adaStations, 84);
-		//var path = $scope.constructPath(shortestPathInfo, 187);
-		//$scope.routePath = path;
-		//$scope.routeMapPath(path);
-		
-		//$scope.originADAStations = [124,187];
-		
-		//$scope.destinationADAStations = [77];
 		if ($('#originInput').attr('noautocomplete') == 'false' && $scope.autocomplete.origin.getPlace())
 			$scope.searchADAStations($scope.origin, $scope.autocomplete.origin.getPlace().geometry.location, true);
 		else {
@@ -620,18 +624,6 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 					window.alert('Geocode of destination not successful for the following reason: ' + status);
 			});
 		}
-		
-		/*$scope.directionsService.route({
-			origin: $scope.origin,
-			destination: $scope.destination,
-			travelMode: 'TRANSIT'
-		}, function(response, status) {
-			if (status === 'OK') {
-				$scope.directionsDisplay.setDirections(response);
-			} else {
-				window.alert('Directions request failed due to ' + status);
-			}
-        });*/
     }
 	
 	$scope.closeTooltip = function($event) {
