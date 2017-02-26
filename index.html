@@ -34,15 +34,25 @@
 		<div class="route" ng-show="showRoute">
 			<div class="searchWidth searchPadding">
 				Origin Stations:
-				<div ng-repeat="stationName in foundStations.origin track by $index">
-					<input type="radio" name="originStations" ng-model="selectedStations.origin" ng-value="stationName" ng-init="$index==0?(selectedStations.origin=stationName):''" /><span>{{adaStations[stationName].station}} {{trainArrayStr(adaStations[stationName].trainArr)}}</span>
+				<div ng-if="foundStations.origin.length > 0">
+					<div ng-repeat="stationName in foundStations.origin track by $index">
+						<input type="radio" name="originStations" ng-model="selectedStations.origin" ng-value="stationName" /><span>{{adaStations[stationName].station}} {{trainArrayStr(adaStations[stationName].trainArr)}}</span>
+					</div>
+				</div>
+				<div ng-if="foundStations.origin.length == 0">
+					No ADA accessible stations found near provided location.
 				</div>
 			</div>
 			<br/>
 			<div class="searchWidth searchPadding">
 				Destination Stations:
-				<div ng-repeat="stationName in foundStations.dest track by $index">
-					<input type="radio" name="destStations" ng-model="selectedStations.dest" ng-value="stationName" ng-init="$index==0?(selectedStations.dest=stationName):''" /><span>{{adaStations[stationName].station}} {{trainArrayStr(adaStations[stationName].trainArr)}}</span>
+				<div ng-if="foundStations.dest.length > 0">
+					<div ng-repeat="stationName in foundStations.dest track by $index">
+						<input type="radio" name="destStations" ng-model="selectedStations.dest" ng-value="stationName" /><span>{{adaStations[stationName].station}} {{trainArrayStr(adaStations[stationName].trainArr)}}</span>
+					</div>
+				</div>
+				<div ng-if="foundStations.dest.length == 0">
+					No ADA accessible stations found near provided location.
 				</div>
 			</div>
 			<br/>

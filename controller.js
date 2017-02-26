@@ -520,8 +520,14 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 					if ($scope.adaStations[builtName] && nearADAStationMTAs.indexOf(builtName) < 0)
 						nearADAStationMTAs.push(builtName);
 				}
-				if (origin) $scope.foundStations.origin = nearADAStationMTAs;
-				else $scope.foundStations.dest = nearADAStationMTAs;
+				if (origin) {
+					$scope.foundStations.origin = nearADAStationMTAs;
+					$scope.selectedStations.origin = nearADAStationMTAs[0];
+				}
+				else {
+					$scope.foundStations.dest = nearADAStationMTAs;
+					$scope.selectedStations.dest = nearADAStationMTAs[0];
+				}
 				$scope.$apply();
 			}
 		});
@@ -570,8 +576,8 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 			dest = destStation.station;
 			if (destStation.latLon)
 				dest = new google.maps.LatLng(destStation.latLon.lat, destStation.latLon.lon);
+			$scope.routeDirections($scope.origin, dest, 'WALKING');
 		}
-		$scope.routeDirections($scope.origin, dest, 'WALKING');
 		for (var i=0; i<path.length - 1; i++) {
 			var originStation = $scope.adaStations[path[i]];
 			var destStation = $scope.adaStations[path[i+1]];
@@ -597,6 +603,10 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 			$scope.routeStation();
 			$scope.showRoute = true;
 		}
+		else {
+			$scope.routePath = [];
+			$scope.routeMapPath([]);
+		}
 	});
 	
     $scope.route = function() {
@@ -612,6 +622,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 					window.alert('Geocode of origin not successful for the following reason: ' + status);
 			});
 		}
+		
 		if ($('#destInput').attr('noautocomplete') == 'false' && $scope.autocomplete.dest.getPlace())
 			$scope.searchADAStations($scope.destination, $scope.autocomplete.dest.getPlace().geometry.location, false);
 		else {
