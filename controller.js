@@ -24,7 +24,7 @@ var app = angular.module('myApp', ['ngSanitize'])
         mapsInitialized : mapsDefer.promise
     };
 })
-.directive('tooltip', function(){
+.directive('tooltip', function() {
     return {
         restrict: 'A',
         link: function(scope, element, attrs){
@@ -39,6 +39,22 @@ var app = angular.module('myApp', ['ngSanitize'])
         }
     };
 })
+.directive('origininputautocomplete', ['Initializer', function(initializerService) {
+    return {
+        require: 'ngModel',
+        link: function(scope, element, attrs, model) {
+			initializerService.mapsInitialized.then(function() { scope.setAutocomplete(element[0], scope, model, true); });
+        }
+    };
+}])
+.directive('destinputautocomplete', ['Initializer', function(initializerService) {
+    return {
+        require: 'ngModel',
+        link: function(scope, element, attrs, model) {
+			initializerService.mapsInitialized.then(function() { scope.setAutocomplete(element[0], scope, model, false); });
+        }
+    };
+}]);;
 
 app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scope, Initializer, $http, $q) {
 	$scope.directionsDisplays = [];
@@ -49,6 +65,8 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 	$scope.placesService;
 	$scope.geocoder;
 	$scope.distanceMatrixService;
+	$scope.originAutocomplete;
+	$scope.destAutocomplete;
 	$scope.map;
 	//$scope.originADAStations = [];
 	//$scope.destinationADAStations = [];
@@ -62,6 +80,10 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 	$scope.routeOptions = {
 		'routeOption': 'shortest',
 		'avoidService': 'YES'
+	};
+	$scope.autocomplete = {
+		'origin': null,
+		'dest': null
 	};
 	$scope.showRoute = false;
 	$scope.pageLoading = true;
@@ -209,6 +231,32 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 			$scope.pageLoading = false;
 		});
 	}
+	
+	$scope.setAutocomplete = function(autocompleteElement, scope, model, isOrigin) {
+		var options = {
+			bounds: new google.maps.LatLngBounds(
+						new google.maps.LatLng(40.477399, -74.259090),
+						new google.maps.LatLng(40.917577, -73.700272)
+					)
+		};
+		var autocomplete = new google.maps.places.Autocomplete(autocompleteElement, options);
+
+		autocompleteElement.onchange = function() {
+			$(autocompleteElement).attr('noautocomplete', 'true');
+		}
+		
+		google.maps.event.addListener(autocomplete, 'place_changed', function() {
+			$(autocompleteElement).attr('noautocomplete', 'false');
+			scope.$apply(function() {
+				model.$setViewValue($(autocompleteElement).val());                
+			});
+		});
+		
+		if (isOrigin)
+			scope.autocomplete.origin = autocomplete;
+		else
+			scope.autocomplete.dest = autocomplete;
+	};
 	
 	$scope.getLines = function(station1index, station2index) {
 		var station1 = $scope.adaStations[station1index];
@@ -548,24 +596,30 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 		//$scope.originADAStations = [124,187];
 		
 		//$scope.destinationADAStations = [77];
-				
-		$scope.geocoder.geocode({'address': $scope.origin}, function(results, status) {
-			if (status === 'OK') {
-				//$scope.createMarker(results[0]);
-				$scope.searchADAStations($scope.origin, results[0].geometry.location, true);
-			}
-			else
-				window.alert('Geocode of origin not successful for the following reason: ' + status);
-		});
-		
-		$scope.geocoder.geocode({'address': $scope.destination}, function(results, status) {
-			if (status === 'OK') {
-				//$scope.createMarker(results[0]);
-				$scope.searchADAStations($scope.destination, results[0].geometry.location, false);
-			}
-			else
-				window.alert('Geocode of destination not successful for the following reason: ' + status);
-		});
+		if ($('#originInput').attr('noautocomplete') == 'false' && $scope.autocomplete.origin.getPlace())
+			$scope.searchADAStations($scope.origin, $scope.autocomplete.origin.getPlace().geometry.location, true);
+		else {
+			$scope.geocoder.geocode({'address': $scope.origin}, function(results, status) {
+				if (status === 'OK') {
+					//$scope.createMarker(results[0]);
+					$scope.searchADAStations($scope.origin, results[0].geometry.location, true);
+				}
+				else
+					window.alert('Geocode of origin not successful for the following reason: ' + status);
+			});
+		}
+		if ($('#destInput').attr('noautocomplete') == 'false' && $scope.autocomplete.dest.getPlace())
+			$scope.searchADAStations($scope.destination, $scope.autocomplete.dest.getPlace().geometry.location, false);
+		else {
+			$scope.geocoder.geocode({'address': $scope.destination}, function(results, status) {
+				if (status === 'OK') {
+					//$scope.createMarker(results[0]);
+					$scope.searchADAStations($scope.destination, results[0].geometry.location, false);
+				}
+				else
+					window.alert('Geocode of destination not successful for the following reason: ' + status);
+			});
+		}
 		
 		/*$scope.directionsService.route({
 			origin: $scope.origin,
