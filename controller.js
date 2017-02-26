@@ -15,7 +15,7 @@ var app = angular.module('myApp', ['ngSanitize'])
 		script.src = asyncUrl + callbackName;
 		document.body.appendChild(script);
     };
-
+	
     //Start loading google maps
     asyncLoad(asyncUrl, 'googleMapsInitialized');
 
@@ -28,7 +28,7 @@ var app = angular.module('myApp', ['ngSanitize'])
     return {
         restrict: 'A',
         link: function(scope, element, attrs){
-            $(element).click(function(){
+            $(element).click(function() {
 				var statusTooltip = $(element).parent().find('.statusTooltip');
 				var show = true;
 				if (statusTooltip.is(':visible')) show = false;
@@ -39,19 +39,35 @@ var app = angular.module('myApp', ['ngSanitize'])
         }
     };
 })
-.directive('origininputautocomplete', ['Initializer', function(initializerService) {
+.directive('origininputautocomplete', ['Initializer', function(Initializer) {
     return {
         require: 'ngModel',
         link: function(scope, element, attrs, model) {
-			initializerService.mapsInitialized.then(function() { scope.setAutocomplete(element[0], scope, model, true); });
+			Initializer.mapsInitialized.then(function() { scope.setAutocomplete(element[0], scope, model, true); });
+			$(element).focus(function() {
+				scope.clickMode = 'origin';
+				$(element).attr("placeholder", "Enter a location or click on the map");
+			});
+			/*$(element).blur(function() {
+				scope.clickMode = null;
+				$(element).attr("placeholder", "Enter a location");
+			});*/
         }
     };
 }])
-.directive('destinputautocomplete', ['Initializer', function(initializerService) {
+.directive('destinputautocomplete', ['Initializer', function(Initializer) {
     return {
         require: 'ngModel',
         link: function(scope, element, attrs, model) {
-			initializerService.mapsInitialized.then(function() { scope.setAutocomplete(element[0], scope, model, false); });
+			Initializer.mapsInitialized.then(function() { scope.setAutocomplete(element[0], scope, model, false); });
+			$(element).focus(function() {
+				scope.clickMode = 'dest';
+				$(element).attr("placeholder", "Enter a location or click on the map");
+			});
+			/*$(element).blur(function() {
+				scope.clickMode = null;
+				$(element).attr("placeholder", "Enter a location");
+			});*/
         }
     };
 }]);;
@@ -65,6 +81,12 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 	$scope.placesService;
 	$scope.geocoder;
 	$scope.distanceMatrixService;
+	$scope.origin;
+	$scope.destination;
+	$scope.originPoint;
+	$scope.destPoint;
+	$scope.originMarker;
+	$scope.destMarker;
 	$scope.originAutocomplete;
 	$scope.destAutocomplete;
 	$scope.map;
@@ -85,12 +107,53 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 	};
 	$scope.showRoute = false;
 	$scope.pageLoading = true;
+	$scope.clickMode = null;
+	
+	//nyc bounding box lat/lon constants
+	$scope.NYC_LAT_NORTH = 40.917577;
+	$scope.NYC_LAT_SOUTH = 40.477399;
+	$scope.NYC_LON_EAST = -73.700272;
+	$scope.NYC_LON_WEST = -74.259090;
 	
     $scope.initMap = function() {
 		Initializer.mapsInitialized.then(function() {
 			$scope.map = new google.maps.Map(document.getElementById('map'), {
 				zoom: 10,
 				center: {lat: 40.7831, lng: -73.9712}
+			});
+			google.maps.event.addListener($scope.map, 'click', function(event) {
+				if ($scope.clickMode) {
+					var lat = event.latLng.lat();
+					var lon = event.latLng.lng();
+					if (lat > $scope.NYC_LAT_NORTH || lat < $scope.NYC_LAT_SOUTH ||
+						lon > $scope.NYC_LON_EAST || lon < $scope.NYC_LAT_WEST)
+						return;
+					else {
+						$scope.geocoder.geocode({'location': event.latLng}, function(results, status) {
+							if (status === 'OK') {
+								if (results[0]) {
+									if ($scope.clickMode == 'origin') {
+										if ($scope.originMarker) $scope.originMarker.setMap(null);
+										$scope.originPoint = results[0];
+										$scope.origin = results[0].formatted_address;
+										$scope.originMarker = $scope.createMarker(results[0], 'Origin');
+										$('#originInput').attr('nomapclick', 'false');
+									}
+									else if ($scope.clickMode == 'dest') {
+										if ($scope.destMarker) $scope.destMarker.setMap(null);
+										$scope.destPoint = results[0];
+										$scope.destination = results[0].formatted_address;
+										$scope.destMarker = $scope.createMarker(results[0], 'Destination');
+										$('#destInput').attr('nomapclick', 'false');
+									}
+									$scope.$apply();
+								}
+							}
+							$scope.clickMode = null;
+							$('.fieldTextBox').attr("placeholder", "Enter a location");
+						});
+					}
+				}
 			});
 			//$scope.directionsDisplay = new google.maps.DirectionsRenderer;
 			//$scope.directionsDisplay.setMap($scope.map);
@@ -310,14 +373,17 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 	$scope.setAutocomplete = function(autocompleteElement, scope, model, isOrigin) {
 		var options = {
 			bounds: new google.maps.LatLngBounds(
-						new google.maps.LatLng(40.477399, -74.259090),
-						new google.maps.LatLng(40.917577, -73.700272)
+						new google.maps.LatLng($scope.NYC_LAT_SOUTH, $scope.NYC_LON_WEST),
+						new google.maps.LatLng($scope.NYC_LAT_NORTH, $scope.NYC_LON_EAST)
 					)
 		};
 		var autocomplete = new google.maps.places.Autocomplete(autocompleteElement, options);
 
 		autocompleteElement.onchange = function() {
 			$(autocompleteElement).attr('noautocomplete', 'true');
+			$(autocompleteElement).attr('nomapclick', 'true');
+			if (isOrigin && $scope.originMarker) $scope.originMarker.setMap(null);
+			else if (!isOrigin && $scope.destMarker) $scope.destMarker.setMap(null);
 		}
 		
 		google.maps.event.addListener(autocomplete, 'place_changed', function() {
@@ -325,6 +391,14 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 			scope.$apply(function() {
 				model.$setViewValue($(autocompleteElement).val());                
 			});
+			if (isOrigin) {
+				if ($scope.originMarker) $scope.originMarker.setMap(null);
+				$scope.originMarker = $scope.createMarker(scope.autocomplete.origin.getPlace(), 'Origin');
+			}
+			else {
+				if ($scope.destMarker) $scope.destMarker.setMap(null);
+				$scope.destMarker = $scope.createMarker(scope.autocomplete.dest.getPlace(), 'Destination');
+			}
 		});
 		
 		if (isOrigin)
@@ -482,18 +556,25 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 		return name.trim();
 	}
 	
-	$scope.createMarker = function(place) {
-        var placeLoc = place.geometry.location;
-		
-        var marker = new google.maps.Marker({
-			map: $scope.map,
-			position: place.geometry.location
-        });
+	$scope.createMarker = function(place, label) {
+		var marker = $scope.createMarkerOnLoc(place.geometry.location, label);
 
         google.maps.event.addListener(marker, 'click', function() {
 			infowindow.setContent(place.name);
 			infowindow.open($scope.map, this);
         });
+		
+		return marker;
+    }
+	
+	$scope.createMarkerOnLoc = function(location, label) {
+		var marker = new google.maps.Marker({
+			position: location,
+			label: label,
+			map: $scope.map
+		});
+		
+		return marker;
     }
 	
 	$scope.trainArrayStr = function(trainArr) {
@@ -612,11 +693,14 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
     $scope.route = function() {
 		if ($('#originInput').attr('noautocomplete') == 'false' && $scope.autocomplete.origin.getPlace())
 			$scope.searchADAStations($scope.origin, $scope.autocomplete.origin.getPlace().geometry.location, true);
+		else if ($('#originInput').attr('nomapclick') == 'false' && $scope.originPoint)
+			$scope.searchADAStations($scope.origin, $scope.originPoint.geometry.location, true);
 		else {
 			$scope.geocoder.geocode({'address': $scope.origin}, function(results, status) {
 				if (status === 'OK') {
 					//$scope.createMarker(results[0]);
-					$scope.searchADAStations($scope.origin, results[0].geometry.location, true);
+					if (results[0])
+						$scope.searchADAStations($scope.origin, results[0].geometry.location, true);
 				}
 				else
 					window.alert('Geocode of origin not successful for the following reason: ' + status);
@@ -625,11 +709,14 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 		
 		if ($('#destInput').attr('noautocomplete') == 'false' && $scope.autocomplete.dest.getPlace())
 			$scope.searchADAStations($scope.destination, $scope.autocomplete.dest.getPlace().geometry.location, false);
+		else if ($('#destInput').attr('nomapclick') == 'false' && $scope.destPoint)
+			$scope.searchADAStations($scope.origin, $scope.destPoint.geometry.location, false);
 		else {
 			$scope.geocoder.geocode({'address': $scope.destination}, function(results, status) {
 				if (status === 'OK') {
 					//$scope.createMarker(results[0]);
-					$scope.searchADAStations($scope.destination, results[0].geometry.location, false);
+					if (results[0])
+						$scope.searchADAStations($scope.destination, results[0].geometry.location, false);
 				}
 				else
 					window.alert('Geocode of destination not successful for the following reason: ' + status);
