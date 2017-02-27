@@ -47,6 +47,7 @@ var app = angular.module('myApp', ['ngSanitize'])
 			$(element).focus(function() {
 				scope.clickMode = 'origin';
 				$(element).attr("placeholder", "Enter a location or click on the map");
+				scope.$apply();
 			});
 			/*$(element).blur(function() {
 				scope.clickMode = null;
@@ -63,6 +64,7 @@ var app = angular.module('myApp', ['ngSanitize'])
 			$(element).focus(function() {
 				scope.clickMode = 'dest';
 				$(element).attr("placeholder", "Enter a location or click on the map");
+				scope.$apply();
 			});
 			/*$(element).blur(function() {
 				scope.clickMode = null;
@@ -689,6 +691,13 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 			$scope.routeMapPath([]);
 		}
 	});
+	
+	$scope.$watch('clickMode', function() { 
+		if ($scope.clickMode && $scope.clickMode == 'origin')
+			$('#destInput').attr("placeholder", "Enter a location");
+		else if ($scope.clickMode && $scope.clickMode == 'dest')
+			$('#originInput').attr("placeholder", "Enter a location");
+	}, true);
 	
     $scope.route = function() {
 		if ($('#originInput').attr('noautocomplete') == 'false' && $scope.autocomplete.origin.getPlace())
