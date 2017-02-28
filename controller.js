@@ -672,7 +672,6 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 	$scope.$watchGroup(['selectedStations.origin', 'selectedStations.dest', 'routeOptions.routeOption', 'routeOptions.avoidService'], function(newVal, oldVal) { 
 		if ($scope.adaStations && $scope.selectedStations.origin && $scope.selectedStations.dest) {
 			$scope.routeStation();
-			$scope.showRoute = true;
 		}
 		else {
 			$scope.routePath = [];
@@ -719,6 +718,8 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 					window.alert('Geocode of destination not successful for the following reason: ' + status);
 			});
 		}
+		
+		$scope.showRoute = true;
     }
 	
 	$scope.closeTooltip = function($event) {
