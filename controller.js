@@ -49,10 +49,6 @@ var app = angular.module('myApp', ['ngSanitize'])
 				$(element).attr("placeholder", "Enter a location or click on the map");
 				scope.$apply();
 			});
-			/*$(element).blur(function() {
-				scope.clickMode = null;
-				$(element).attr("placeholder", "Enter a location");
-			});*/
         }
     };
 }])
@@ -66,10 +62,6 @@ var app = angular.module('myApp', ['ngSanitize'])
 				$(element).attr("placeholder", "Enter a location or click on the map");
 				scope.$apply();
 			});
-			/*$(element).blur(function() {
-				scope.clickMode = null;
-				$(element).attr("placeholder", "Enter a location");
-			});*/
         }
     };
 }]);;
@@ -269,10 +261,6 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 					}
 					//special case for fulton st, R train is accessible but doesn't appear
 					stationsByName['fulton st'].trainArr['R'] = true;
-					/*stations.sort(function(a,b) {
-						return a.builtStationName.localeCompare(b.builtStationName);
-					});*/
-					//$scope.adaStations = stations;
 					var stationIndex = 0;
 					for (var stationName in stationsByName) {
 						var station = stationsByName[stationName];
@@ -479,8 +467,8 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 					for (var j=0; j<stationStatuses.length; j++) {
 						if (stationStatuses[j].equipmenttype == 'EL') {
 							var stationStatusTrains = stationStatuses[j].trainno.split("/");
-							for (var j=0; j<stationStatusTrains.length; j++) {
-								if (minDistStation.trainArr[stationStatusTrains[j]] || neighbor.trainArr[stationStatusTrains[j]]) {
+							for (var k=0; k<stationStatusTrains.length; k++) {
+								if (minDistStation.trainArr[stationStatusTrains[k]] || neighbor.trainArr[stationStatusTrains[k]]) {
 									outOfService = true;
 									break;
 								}
@@ -697,7 +685,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 			$('#destInput').attr("placeholder", "Enter a location");
 		else if ($scope.clickMode && $scope.clickMode == 'dest')
 			$('#originInput').attr("placeholder", "Enter a location");
-	}, true);
+	});
 	
     $scope.route = function() {
 		if ($('#originInput').attr('noautocomplete') == 'false' && $scope.autocomplete.origin.getPlace())
