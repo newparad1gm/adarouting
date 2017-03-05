@@ -71,11 +71,11 @@ html, body {
 .currentLocation {
 	width: 300px;
 	display: inline-block;
-	padding-left: 90px;
+	padding-left: 95px;
 }
 
 .fieldName {
-	width: 85px;
+	width: 90px;
 	display: inline-block;
 }
 
