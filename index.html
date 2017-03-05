@@ -23,7 +23,8 @@
 	</div>
 	<div class="searchBar" ng-show="!pageLoading">
 		<div class="searchWidth searchPadding">
-			<p><div class="fieldName">Origin :</div> <input type="text" id="originInput" ng-model="origin" class="fieldTextBox" origininputautocomplete/></p>
+			<p><div class="fieldName">Origin :</div> <input type="text" id="originInput" ng-model="origin" class="fieldTextBox" origininputautocomplete/>
+			   <div class="currentLocation" ng-click="currentLoc()"><a href="#">Use Current Location</a></div></p>
 			<p><div class="fieldName">Destination :</div> <input type="text" id="destInput" ng-model="destination" class="fieldTextBox" destinputautocomplete/></p>
 			<p><button ng-click="route()">Route</button>
 				<input type="radio" name="routeOptions" ng-model="routeOptions.routeOption" value="shortest" /><span>Shortest Route</span>

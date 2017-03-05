@@ -116,41 +116,8 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 				center: {lat: 40.7831, lng: -73.9712}
 			});
 			google.maps.event.addListener($scope.map, 'click', function(event) {
-				if ($scope.clickMode) {
-					var lat = event.latLng.lat();
-					var lon = event.latLng.lng();
-					if (lat > $scope.NYC_LAT_NORTH || lat < $scope.NYC_LAT_SOUTH ||
-						lon > $scope.NYC_LON_EAST || lon < $scope.NYC_LAT_WEST)
-						return;
-					else {
-						$scope.geocoder.geocode({'location': event.latLng}, function(results, status) {
-							if (status === 'OK') {
-								if (results[0]) {
-									if ($scope.clickMode == 'origin') {
-										if ($scope.originMarker) $scope.originMarker.setMap(null);
-										$scope.originPoint = results[0];
-										$scope.origin = results[0].formatted_address;
-										$scope.originMarker = $scope.createMarker(results[0], 'Origin');
-										$('#originInput').attr('nomapclick', 'false');
-									}
-									else if ($scope.clickMode == 'dest') {
-										if ($scope.destMarker) $scope.destMarker.setMap(null);
-										$scope.destPoint = results[0];
-										$scope.destination = results[0].formatted_address;
-										$scope.destMarker = $scope.createMarker(results[0], 'Destination');
-										$('#destInput').attr('nomapclick', 'false');
-									}
-									$scope.$apply();
-								}
-							}
-							$scope.clickMode = null;
-							$('.fieldTextBox').attr("placeholder", "Enter a location");
-						});
-					}
-				}
+				$scope.setInputFromLatLng(event.latLng.lat(), event.latLng.lng());
 			});
-			//$scope.directionsDisplay = new google.maps.DirectionsRenderer;
-			//$scope.directionsDisplay.setMap($scope.map);
             $scope.directionsService = new google.maps.DirectionsService;
 			$scope.placesService = new google.maps.places.PlacesService($scope.map);
 			$scope.geocoder = new google.maps.Geocoder();
@@ -679,6 +646,45 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 		}
 	});
 	
+	$scope.setInputFromLatLng = function(lat, lon) {
+		if ($scope.clickMode) {
+			if (lat > $scope.NYC_LAT_NORTH || lat < $scope.NYC_LAT_SOUTH ||
+				lon > $scope.NYC_LON_EAST || lon < $scope.NYC_LAT_WEST)
+				return;
+			else {
+				var pos = {
+					lat: lat,
+					lng: lon
+				};
+
+				$scope.geocoder.geocode({'location': pos}, function(results, status) {
+					if (status === 'OK') {
+						if (results[0]) {
+							if ($scope.clickMode == 'origin') {
+								if ($scope.originMarker) $scope.originMarker.setMap(null);
+								$scope.originPoint = results[0];
+								$scope.origin = results[0].formatted_address;
+								$scope.originMarker = $scope.createMarker(results[0], 'Origin');
+								$('#originInput').attr('nomapclick', 'false');
+							}
+							else if ($scope.clickMode == 'dest') {
+								if ($scope.destMarker) $scope.destMarker.setMap(null);
+								$scope.destPoint = results[0];
+								$scope.destination = results[0].formatted_address;
+								$scope.destMarker = $scope.createMarker(results[0], 'Destination');
+								$('#destInput').attr('nomapclick', 'false');
+							}
+							$scope.$apply();
+						}
+					}
+					$scope.clickMode = null;
+					$('.fieldTextBox').attr("placeholder", "Enter a location");
+				});
+			}
+		}	
+	}
+	
+	
 	$scope.$watch('clickMode', function() { 
 		if ($scope.clickMode && $scope.clickMode == 'origin')
 			$('#destInput').attr("placeholder", "Enter a location");
@@ -721,6 +727,21 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 		
 		$scope.showRoute = true;
     }
+	
+	$scope.currentLoc = function() {
+		if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(function(position) {
+				$scope.clickMode = 'origin';
+				$scope.$apply();
+				$scope.setInputFromLatLng(position.coords.latitude, position.coords.longitude);
+			}, function() {
+				window.alert('Current location failed');
+			});
+        } else {
+			window.alert('Browser does not support Geolocation');
+        }
+
+	}
 	
 	$scope.closeTooltip = function($event) {
 		$($event.currentTarget).parent().hide();
