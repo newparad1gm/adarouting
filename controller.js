@@ -725,6 +725,7 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 			});
 		}
 		
+		$scope.clickMode = null;
 		$scope.showRoute = true;
     }
 	
