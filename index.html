@@ -68,8 +68,9 @@
 							<div ng-repeat="status in stationStatus[stationName]">
 								<span>Train: {{status.trainno}}</span><br/>
 								<span><span ng-if="status.equipmenttype == 'EL'">Elevator </span><span ng-if="status.equipmenttype == 'ES'">Escalator </span>Serving: {{status.serving}}</span><br/>
+								<span>Outage Date: {{status.outagedate}}</span><br/>
 								<span>Estimated Return to Service: {{status.estimatedreturntoservice}}</span><br/>
-								<span>Reason: {{status.reason}}</span><br/>
+								<span>Reason: {{status.reason}}</span><br/><br/>
 							</div>
 						</div>
 					</div>
