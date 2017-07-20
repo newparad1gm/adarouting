@@ -211,7 +211,10 @@ app.controller('myCtrl', ['$scope', 'Initializer', '$http', '$q', function($scop
 					stations = stations.NYCEquipments.equipment;
 					var stationsByName = new Array();
 					for (var i=stations.length-1; i>=0; i--) {
-						if (stations[i].ADA != "Y")
+						if (stations[i].ADA != "Y" || 
+							!(stations[i].serving.toLowerCase().indexOf('uptown') > -1 ||
+							  stations[i].serving.toLowerCase().indexOf('downtown') > -1 ||
+							  stations[i].serving.toLowerCase().indexOf('platform') > -1))
 							stations.splice(i, 1);
 						else {
 							var builtStationName = $scope.buildStationName(stations[i].station);
