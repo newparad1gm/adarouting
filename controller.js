@@ -2,7 +2,7 @@ var app = angular.module('myApp', ['ngSanitize'])
 .factory('Initializer', function($window, $q){
 
     //Google's url for async maps initialization accepting callback function
-    var asyncUrl = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBEMXnUiLoUh3eGcrRFdMlsntseehAI774&libraries=places&callback=',
+    var asyncUrl = 'https://maps.googleapis.com/maps/api/js?key=API_KEY_HERE&libraries=places&callback=',
         mapsDefer = $q.defer();
 
     //Callback function - resolving promise after maps successfully loaded
